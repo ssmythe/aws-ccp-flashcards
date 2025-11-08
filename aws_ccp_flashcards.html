@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AWS CCP Flashcards — In‑Scope Services</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --card-w: 320px;
+      --card-h: 200px;
+    }
+    body { background: #0f172a; color: #e2e8f0; }
+    .app-header { position: sticky; top: 0; z-index: 1030; background: #0f172a; border-bottom: 1px solid #334155; }
+    .badge-cat { background: #334155; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr)); gap: 1rem; }
+    .flip-wrap { perspective: 1000px; height: var(--card-h); }
+    .flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .4s ease; }
+    .flip.flipped { transform: rotateY(180deg); }
+    .side { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 1rem; border: 1px solid #334155; background: #0b1220; }
+    .front { display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .back { transform: rotateY(180deg); padding: 1rem; }
+    .service { font-weight: 700; font-size: 1.25rem; text-align: center; }
+    .controls .form-control, .controls .form-select { background: #0b1220; border-color: #334155; color: #e2e8f0; }
+    .controls .form-control::placeholder { color: #94a3b8; }
+    .btn-outline-light { --bs-btn-border-color:#475569; --bs-btn-color:#e2e8f0; --bs-btn-hover-bg:#1e293b; --bs-btn-hover-border-color:#64748b; }
+    .small-muted { color: #94a3b8; }
+    .footer { color: #94a3b8; }
+    .card-count { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <header class="app-header py-3">
+    <div class="container">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <h1 class="fs-4 m-0">AWS CCP Flashcards — In‑Scope Services</h1>
+        <span class="small small-muted">Flip each card to see the summary and category.</span>
+        <div class="ms-auto d-flex gap-2 controls">
+          <input id="search" class="form-control" style="width: 260px" placeholder="Search services… (e.g., S3, IAM)" />
+          <select id="category" class="form-select" style="width: 260px">
+            <option value="">All categories</option>
+          </select>
+          <button id="shuffle" class="btn btn-outline-light">Shuffle</button>
+          <button id="reset" class="btn btn-outline-light">Reset</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-4">
+    <div class="mb-3">
+      <span class="small small-muted">Cards: <span id="count" class="card-count"></span></span>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer class="container pb-5 footer">
+    <hr class="border-secondary" />
+    <p class="small">Built from the official AWS Certified Cloud Practitioner (CLF‑C02) exam guide’s in‑scope services list. This file is for study purposes only.</p>
+  </footer>
+
+  <script type="module">
+    /**
+     * Minimal TypeScript-like typing via JSDoc for clarity.
+     * @typedef {{name:string, category:string, summary:string}} Card
+     */
+
+    /** @type {Card[]} */
+    const CARDS = [
+      // Analytics
+      {name:"Amazon Athena", category:"Analytics", summary:"Serverless interactive SQL over data in Amazon S3; pay per query."},
+      {name:"Amazon EMR", category:"Analytics", summary:"Managed big‑data frameworks (Apache Spark/Hadoop) for large‑scale processing."},
+      {name:"AWS Glue", category:"Analytics", summary:"Serverless data integration (ETL), catalog, and jobs for analytics workloads."},
+      {name:"Amazon Kinesis", category:"Analytics", summary:"Real‑time data streaming (ingest, process, analyze) at scale."},
+      {name:"Amazon OpenSearch Service", category:"Analytics", summary:"Managed OpenSearch clusters for search, logs, and observability."},
+      {name:"Amazon QuickSight", category:"Analytics", summary:"Cloud‑native business intelligence (dashboards, ML insights)."},
+      {name:"Amazon Redshift", category:"Analytics", summary:"Fully managed data warehouse for fast SQL analytics at scale."},
+
+      // Application Integration
+      {name:"Amazon EventBridge", category:"Application Integration", summary:"Serverless event bus to connect apps using events from AWS/SaaS/custom sources."},
+      {name:"Amazon Simple Notification Service (SNS)", category:"Application Integration", summary:"Pub/sub messaging and mobile/HTTP notifications."},
+      {name:"Amazon Simple Queue Service (SQS)", category:"Application Integration", summary:"Fully managed message queues to decouple and scale microservices."},
+      {name:"AWS Step Functions", category:"Application Integration", summary:"Visual serverless workflows and state machines to orchestrate services."},
+
+      // Business Applications
+      {name:"Amazon Connect", category:"Business Applications", summary:"Cloud contact center with omnichannel routing and analytics."},
+      {name:"Amazon Simple Email Service (SES)", category:"Business Applications", summary:"Scalable, cost‑effective transactional and marketing email."},
+
+      // Cloud Financial Management
+      {name:"AWS Budgets", category:"Cloud Financial Management", summary:"Set cost/usage budgets and get alerts when thresholds are crossed."},
+      {name:"AWS Cost and Usage Reports", category:"Cloud Financial Management", summary:"Granular cost and usage data exports for analysis."},
+      {name:"AWS Cost Explorer", category:"Cloud Financial Management", summary:"Visualize, analyze, and forecast AWS costs and usage."},
+      {name:"AWS Marketplace", category:"Cloud Financial Management", summary:"Curated third‑party software catalog with metered billing and governance."},
+
+      // Compute
+      {name:"AWS Batch", category:"Compute", summary:"Run batch computing jobs at any scale without managing servers."},
+      {name:"Amazon EC2", category:"Compute", summary:"Resizable virtual servers with many instance families and purchasing options."},
+      {name:"AWS Elastic Beanstalk", category:"Compute", summary:"PaaS for web apps; deploy code and Beanstalk manages capacity, scaling, health."},
+      {name:"Amazon Lightsail", category:"Compute", summary:"Simplified VPS with bundles for compute, storage, and networking."},
+      {name:"AWS Outposts", category:"Compute", summary:"Run AWS infrastructure and services on‑premises for hybrid use cases."},
+
+      // Containers
+      {name:"Amazon Elastic Container Registry (ECR)", category:"Containers", summary:"Private container image registry integrated with ECS/EKS."},
+      {name:"Amazon Elastic Container Service (ECS)", category:"Containers", summary:"Managed container orchestration using tasks/services; works with Fargate/EC2."},
+      {name:"Amazon Elastic Kubernetes Service (EKS)", category:"Containers", summary:"Managed Kubernetes control plane with integrations to AWS."},
+
+      // Customer Enablement
+      {name:"AWS Support", category:"Customer Enablement", summary:"Support plans and access to engineers, Trusted Advisor checks, and guidance."},
+
+      // Database
+      {name:"Amazon Aurora", category:"Database", summary:"MySQL/PostgreSQL‑compatible relational DB with performance and HA."},
+      {name:"Amazon DocumentDB", category:"Database", summary:"Managed document database compatible with MongoDB workloads."},
+      {name:"Amazon DynamoDB", category:"Database", summary:"Serverless key‑value/NoSQL database with single‑digit ms latency."},
+      {name:"Amazon ElastiCache", category:"Database", summary:"Managed Redis/Memcached for sub‑ms caching and session storage."},
+      {name:"Amazon Neptune", category:"Database", summary:"Managed graph database (property and RDF) for relationships."},
+      {name:"Amazon RDS", category:"Database", summary:"Managed relational databases (MySQL, PostgreSQL, MariaDB, Oracle, SQL Server)."},
+
+      // Developer Tools
+      {name:"AWS CLI", category:"Developer Tools", summary:"Command‑line interface to manage AWS services programmatically."},
+      {name:"AWS CodeBuild", category:"Developer Tools", summary:"Managed build service for compiling code, running tests, producing artifacts."},
+      {name:"AWS CodePipeline", category:"Developer Tools", summary:"Continuous delivery pipelines for automated releases."},
+      {name:"AWS X-Ray", category:"Developer Tools", summary:"Distributed tracing to analyze and debug production apps."},
+
+      // End User Computing
+      {name:"Amazon AppStream 2.0", category:"End User Computing", summary:"Stream desktop apps securely to any browser."},
+      {name:"Amazon WorkSpaces", category:"End User Computing", summary:"Managed virtual desktops in the cloud."},
+      {name:"Amazon WorkSpaces Secure Browser", category:"End User Computing", summary:"Isolated, secure browser sessions delivered from AWS."},
+
+      // Frontend Web & Mobile
+      {name:"AWS Amplify", category:"Frontend Web & Mobile", summary:"Tools and hosting to build, deploy, and scale full‑stack web/mobile apps."},
+      {name:"AWS AppSync", category:"Frontend Web & Mobile", summary:"Managed GraphQL and Pub/Sub APIs with resolvers and caching."},
+
+      // IoT
+      {name:"AWS IoT Core", category:"IoT", summary:"Securely connect, manage, and ingest data from IoT devices."},
+
+      // Machine Learning
+      {name:"Amazon Comprehend", category:"Machine Learning", summary:"NLP for entity detection, sentiment, key phrases, topics."},
+      {name:"Amazon Kendra", category:"Machine Learning", summary:"Intelligent enterprise search across internal content repositories."},
+      {name:"Amazon Lex", category:"Machine Learning", summary:"Build conversational interfaces (chatbots/voice) using ASR + NLU."},
+      {name:"Amazon Polly", category:"Machine Learning", summary:"Text‑to‑speech service with lifelike voices."},
+      {name:"Amazon Q", category:"Machine Learning", summary:"Generative AI assistants and capabilities for developers and business users."},
+      {name:"Amazon Rekognition", category:"Machine Learning", summary:"Image and video analysis (labels, moderation, face search)."},
+      {name:"Amazon SageMaker AI", category:"Machine Learning", summary:"End‑to‑end platform to build, train, and deploy ML models."},
+      {name:"Amazon Textract", category:"Machine Learning", summary:"Extract text, forms, and tables from documents with ML."},
+      {name:"Amazon Transcribe", category:"Machine Learning", summary:"Automatic speech‑to‑text transcription."},
+      {name:"Amazon Translate", category:"Machine Learning", summary:"Neural machine translation between languages."},
+
+      // Management & Governance
+      {name:"AWS Auto Scaling", category:"Management & Governance", summary:"Automatically adjust capacity across services to maintain performance."},
+      {name:"AWS CloudFormation", category:"Management & Governance", summary:"Infrastructure as code to model and provision AWS resources safely."},
+      {name:"AWS CloudTrail", category:"Management & Governance", summary:"Record, store, and audit API activity and account events."},
+      {name:"Amazon CloudWatch", category:"Management & Governance", summary:"Metrics, logs, alarms, dashboards, and observability."},
+      {name:"AWS Compute Optimizer", category:"Management & Governance", summary:"Right‑sizing recommendations for cost and performance."},
+      {name:"AWS Config", category:"Management & Governance", summary:"Resource inventory, configuration history, and compliance rules."},
+      {name:"AWS Control Tower", category:"Management & Governance", summary:"Set up and govern secure multi‑account AWS landing zones."},
+      {name:"AWS Health Dashboard", category:"Management & Governance", summary:"Personalized view of AWS service health events impacting your resources."},
+      {name:"AWS License Manager", category:"Management & Governance", summary:"Track and manage software licenses across AWS and on‑prem."},
+      {name:"AWS Management Console", category:"Management & Governance", summary:"Web console for interacting with AWS services."},
+      {name:"AWS Organizations", category:"Management & Governance", summary:"Multi‑account management with consolidated billing and SCPs."},
+      {name:"AWS Service Catalog", category:"Management & Governance", summary:"Curate, govern, and distribute approved IT service portfolios."},
+      {name:"Service Quotas", category:"Management & Governance", summary:"View and manage service limits programmatically."},
+      {name:"AWS Systems Manager", category:"Management & Governance", summary:"Fleet management (Run Command, Patch, Parameter Store, OpsCenter)."},
+      {name:"AWS Trusted Advisor", category:"Management & Governance", summary:"Best‑practice checks across cost, security, fault tolerance, and performance."},
+      {name:"AWS Well-Architected Tool", category:"Management & Governance", summary:"Review workloads against Well‑Architected best practices."},
+
+      // Migration & Transfer
+      {name:"AWS Application Discovery Service", category:"Migration & Transfer", summary:"Discover on‑prem inventory and dependencies for migration planning."},
+      {name:"AWS Application Migration Service", category:"Migration & Transfer", summary:"Lift‑and‑shift block‑level replication to migrate servers to AWS."},
+      {name:"AWS Database Migration Service (DMS)", category:"Migration & Transfer", summary:"Migrate databases to AWS with minimal downtime; supports heterogeneous."},
+      {name:"Migration Evaluator", category:"Migration & Transfer", summary:"Right‑size and cost estimation recommendations for migrations."},
+      {name:"AWS Migration Hub", category:"Migration & Transfer", summary:"Track migration progress across multiple tools in one place."},
+      {name:"AWS Schema Conversion Tool (SCT)", category:"Migration & Transfer", summary:"Convert database schemas between engines during migration."},
+      {name:"AWS Snow Family", category:"Migration & Transfer", summary:"Edge devices (Snowcone/Snowball/Snowmobile) for offline data transfer."},
+
+      // Networking & Content Delivery
+      {name:"Amazon API Gateway", category:"Networking & Content Delivery", summary:"Create, publish, secure, and monitor REST/WebSocket APIs at scale."},
+      {name:"Amazon CloudFront", category:"Networking & Content Delivery", summary:"Global CDN to deliver content with low latency and high transfer speeds."},
+      {name:"AWS Direct Connect", category:"Networking & Content Delivery", summary:"Dedicated private network links from your premises to AWS."},
+      {name:"AWS Global Accelerator", category:"Networking & Content Delivery", summary:"Anycast accelerates traffic via AWS global network for better availability/latency."},
+      {name:"AWS PrivateLink", category:"Networking & Content Delivery", summary:"Private connectivity to services via VPC endpoints over the AWS network."},
+      {name:"Amazon Route 53", category:"Networking & Content Delivery", summary:"Scalable DNS, domain registration, and routing policies (latency, weighted)."},
+      {name:"AWS Transit Gateway", category:"Networking & Content Delivery", summary:"Hub‑and‑spoke connectivity for VPCs and on‑prem networks."},
+      {name:"Amazon VPC", category:"Networking & Content Delivery", summary:"Isolated virtual network with subnets, route tables, SGs, and NACLs."},
+      {name:"AWS VPN (Site‑to‑Site, Client VPN)", category:"Networking & Content Delivery", summary:"IPsec (site‑to‑site) and client VPN access into your VPC."},
+
+      // Security, Identity & Compliance
+      {name:"AWS Artifact", category:"Security, Identity & Compliance", summary:"On‑demand access to compliance reports and agreements."},
+      {name:"AWS Audit Manager", category:"Security, Identity & Compliance", summary:"Automate evidence collection to simplify audits."},
+      {name:"AWS Certificate Manager (ACM)", category:"Security, Identity & Compliance", summary:"Provision and manage TLS/SSL certificates for use with AWS services."},
+      {name:"AWS CloudHSM", category:"Security, Identity & Compliance", summary:"Managed hardware security modules for FIPS‑validated key storage."},
+      {name:"Amazon Cognito", category:"Security, Identity & Compliance", summary:"User sign‑up/sign‑in and identity federation for apps."},
+      {name:"Amazon Detective", category:"Security, Identity & Compliance", summary:"Investigate security findings with graph‑based link analysis."},
+      {name:"AWS Directory Service", category:"Security, Identity & Compliance", summary:"Managed Microsoft AD and AD connectors for AWS."},
+      {name:"AWS Firewall Manager", category:"Security, Identity & Compliance", summary:"Central policy management for AWS WAF, Shield Advanced, and SGs."},
+      {name:"Amazon GuardDuty", category:"Security, Identity & Compliance", summary:"Intelligent threat detection and continuous monitoring."},
+      {name:"AWS Identity and Access Management (IAM)", category:"Security, Identity & Compliance", summary:"Securely control access to AWS services and resources with policies."},
+      {name:"AWS IAM Identity Center", category:"Security, Identity & Compliance", summary:"Successor to AWS SSO; SSO access and permissions to accounts/apps."},
+      {name:"Amazon Inspector", category:"Security, Identity & Compliance", summary:"Automated security assessments for EC2/ECR/Lambda."},
+      {name:"AWS Key Management Service (KMS)", category:"Security, Identity & Compliance", summary:"Managed keys and encryption for applications and services."},
+      {name:"Amazon Macie", category:"Security, Identity & Compliance", summary:"Discover and protect sensitive data in Amazon S3 using ML."},
+      {name:"AWS Resource Access Manager (RAM)", category:"Security, Identity & Compliance", summary:"Share AWS resources across accounts and within Organizations."},
+      {name:"AWS Secrets Manager", category:"Security, Identity & Compliance", summary:"Store, rotate, and retrieve secrets programmatically."},
+      {name:"AWS Security Hub", category:"Security, Identity & Compliance", summary:"Centralize, prioritize, and remediate security findings."},
+      {name:"AWS Shield", category:"Security, Identity & Compliance", summary:"Managed DDoS protection; Advanced adds extra features/SLAs."},
+      {name:"AWS WAF", category:"Security, Identity & Compliance", summary:"Web application firewall with managed rules and rate limiting."},
+
+      // Serverless
+      {name:"AWS Fargate", category:"Serverless", summary:"Serverless compute for containers; no servers to manage."},
+      {name:"AWS Lambda", category:"Serverless", summary:"Run code without provisioning servers; event‑driven, per‑ms billing."},
+
+      // Storage
+      {name:"AWS Backup", category:"Storage", summary:"Centralized backup across AWS services and on‑prem via gateways."},
+      {name:"Amazon EBS", category:"Storage", summary:"Block storage volumes for EC2; SSD/HDD options and snapshots."},
+      {name:"Amazon EFS", category:"Storage", summary:"Elastic, serverless NFS file system for Linux workloads."},
+      {name:"AWS Elastic Disaster Recovery", category:"Storage", summary:"DR service for physical/virtual/Cloud servers to AWS."},
+      {name:"Amazon FSx", category:"Storage", summary:"Managed file systems (e.g., FSx for Windows/File, NetApp ONTAP, OpenZFS)." },
+      {name:"Amazon S3", category:"Storage", summary:"Object storage with multiple storage classes and lifecycle policies."},
+      {name:"Amazon S3 Glacier", category:"Storage", summary:"Archive storage classes for low‑cost long‑term retention."},
+      {name:"AWS Storage Gateway", category:"Storage", summary:"Hybrid storage (File, Volume, Tape) bridging on‑prem and S3/EBS."}
+    ];
+
+    // ----- Rendering -----
+    const grid = document.getElementById('grid');
+    const search = document.getElementById('search');
+    const category = document.getElementById('category');
+    const shuffleBtn = document.getElementById('shuffle');
+    const resetBtn = document.getElementById('reset');
+    const count = document.getElementById('count');
+
+    /** Populate category filter */
+    const cats = [...new Set(CARDS.map(c => c.category))].sort();
+    for (const c of cats) {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      category.appendChild(opt);
+    }
+
+    /** Current view */
+    let view = [...CARDS];
+
+    function render() {
+      grid.innerHTML = '';
+      for (const card of view) {
+        const col = document.createElement('div');
+        const wrap = document.createElement('div');
+        wrap.className = 'flip-wrap';
+        const flip = document.createElement('div');
+        flip.className = 'flip shadow-sm';
+
+        const front = document.createElement('div');
+        front.className = 'side front d-flex flex-column justify-content-between';
+        const name = document.createElement('div');
+        name.className = 'service';
+        name.textContent = card.name;
+        const fbar = document.createElement('div');
+        fbar.className = 'd-flex justify-content-between align-items-center p-2';
+        const catBadge = document.createElement('span');
+        catBadge.className = 'badge badge-cat';
+        catBadge.textContent = 'Hidden';
+        const flipBtn1 = document.createElement('button');
+        flipBtn1.className = 'btn btn-sm btn-outline-light';
+        flipBtn1.textContent = 'Flip';
+        flipBtn1.addEventListener('click', () => flip.classList.toggle('flipped'));
+        fbar.append(catBadge, flipBtn1);
+        front.append(name, fbar);
+
+        const back = document.createElement('div');
+        back.className = 'side back';
+        const btitle = document.createElement('div');
+        btitle.className = 'fw-bold mb-1';
+        btitle.textContent = card.name;
+        const bcat = document.createElement('div');
+        bcat.className = 'mb-2';
+        bcat.innerHTML = `<span class="badge text-bg-secondary">${card.category}</span>`;
+        const bsum = document.createElement('div');
+        bsum.textContent = card.summary;
+        const bbar = document.createElement('div');
+        bbar.className = 'd-flex justify-content-end align-items-center gap-2 mt-3';
+        const flipBtn2 = document.createElement('button');
+        flipBtn2.className = 'btn btn-sm btn-outline-light';
+        flipBtn2.textContent = 'Flip';
+        flipBtn2.addEventListener('click', () => flip.classList.toggle('flipped'));
+        bbar.append(flipBtn2);
+        back.append(btitle, bcat, bsum, bbar);
+
+        flip.append(front, back);
+        wrap.append(flip);
+        col.append(wrap);
+        grid.append(col);
+      }
+      count.textContent = `${view.length} of ${CARDS.length}`;
+    }
+
+    function applyFilters() {
+      const q = search.value.trim().toLowerCase();
+      const cat = category.value;
+      view = CARDS.filter(c => {
+        const matchesQ = !q || c.name.toLowerCase().includes(q) || c.summary.toLowerCase().includes(q);
+        const matchesC = !cat || c.category === cat;
+        return matchesQ && matchesC;
+      });
+      render();
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // Event wiring
+    search.addEventListener('input', applyFilters);
+    category.addEventListener('change', applyFilters);
+    shuffleBtn.addEventListener('click', () => { shuffle(view); render(); });
+    resetBtn.addEventListener('click', () => {
+      search.value = '';
+      category.value = '';
+      view = [...CARDS];
+      render();
+    });
+
+    // Initial render
+    render();
+  </script>
+  <!-- Bootstrap JS (for potential future extensions; not required for current features) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
